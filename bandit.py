@@ -17,7 +17,7 @@ alpha = 0.1  # Learning rate for Q-value update
 learning_rate_weights = 0.05  # Learning rate for weight optimization
 epsilon = 0.1  # Exploration rate for epsilon-greedy
 c = 2  # Exploration constant for UCB
-selection_method = "UCB"  # Choose either "epsilon_greedy" or "UCB"
+selection_method = "epsilon_greedy"  # Choose either "epsilon_greedy" or "UCB"
 base_output_folder = 'output_results/'  # Base folder for all outputs
 
 # Function to ensure the output folder exists
@@ -92,7 +92,7 @@ def plot_results(reward_history, avg_reward_history, count_matrix, Q_values_hist
     plt.show()
 
 # Function to run the bandit algorithm for a single seed
-def run_bandit_experiment(seed, output_folder):
+def run_bandit_experiment(seed, output_folder, epsilon):
     np.random.seed(seed)
     
     # Initialize Q-values, rewards, and count matrix
@@ -107,6 +107,9 @@ def run_bandit_experiment(seed, output_folder):
     avg_reward_history = []
     Q_values_history = np.zeros((n_rounds, n_arms))  # To store Q-values over time
 
+    # Initialize epsilon for epsilon-greedy strategy
+    epsilon_value = epsilon  # Use a local epsilon value that can be decayed
+
     # Loop over each round
     for i in range(n_rounds):
         metrics_row = normalized_data.iloc[i]
@@ -116,8 +119,8 @@ def run_bandit_experiment(seed, output_folder):
         
         # Choose an arm based on the selected method
         if selection_method == "epsilon_greedy":
-            chosen_arm = choose_arm_epsilon_greedy(epsilon, Q_values)
-            epsilon = max(0.01, epsilon * 0.99)  # Optional: decay epsilon over time
+            chosen_arm = choose_arm_epsilon_greedy(epsilon_value, Q_values)
+            epsilon = max(0.01, epsilon_value * 0.99)  # Optional: decay epsilon over time
         elif selection_method == "UCB":
             chosen_arm = choose_arm_ucb(Q_values, count_matrix, i, c)
         
@@ -162,14 +165,14 @@ def run_bandit_experiment(seed, output_folder):
     print(f"Seed {seed}: Average reward:", np.mean(reward_history))
 
 # Function to automate multiple seed runs
-def run_multiple_seeds(seeds, base_output_folder):
+def run_multiple_seeds(seeds, base_output_folder, epsilon):
     for seed in seeds:
         seed_output_folder = base_output_folder + f'seed_{seed}/'
         print(f"Running experiment for seed {seed}...")
-        run_bandit_experiment(seed, seed_output_folder)
+        run_bandit_experiment(seed, seed_output_folder, epsilon)
 
 # Function to choose an arm using epsilon-greedy
-def choose_arm_epsilon_greedy(epsilon, Q_values):
+def choose_arm_epsilon_greedy(epsilon_value, Q_values):
     if np.random.rand() < epsilon:
         return np.random.randint(n_arms)  # Explore
     else:
@@ -205,4 +208,4 @@ def update_weights(weights, metrics, reward, target_reward, lr):
 
 # Main execution
 seeds = [42, 123, 999]  # Example seed list
-run_multiple_seeds(seeds, base_output_folder)
+run_multiple_seeds(seeds, base_output_folder, epsilon)
